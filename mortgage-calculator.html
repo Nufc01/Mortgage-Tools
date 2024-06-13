@@ -89,9 +89,44 @@
         .back-home:hover {
             text-decoration: underline;
         }
+
+        /* CSS for loading spinner */
+        .loading-spinner {
+            display: none; /* Initially hidden */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white background */
+            z-index: 1000; /* Ensure it's above other content */
+        }
+
+        .spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 8px solid #f3f3f3; /* Light grey border */
+            border-top: 8px solid #3498db; /* Blue border */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <!-- Loading spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+    </div>
+
     <div class="container" id="content">
         <h1>Mortgage Repayment Calculator</h1>
         <form id="mortgageForm">
@@ -115,7 +150,7 @@
                     <option value="weekly">Weekly</option>
                 </select>
             </div>
-            <button type="button" onclick="calculateMortgage()">Calculate</button>
+            <button type="button" onclick="showLoadingSpinner(); setTimeout(calculateMortgage, 1000);">Calculate</button>
             <button type="button" onclick="downloadPDF()">Download as PDF</button>
         </form>
         <h2 class="chart-title">Repayment Graph</h2> <!-- Title here -->
@@ -132,6 +167,14 @@
     <script>
         let repaymentChart;
 
+        function showLoadingSpinner() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+        }
+
+        function hideLoadingSpinner() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
         function calculateMortgage() {
             const principal = parseFloat(document.getElementById('principal').value.replace(/,/g, ''));
             const annualInterestRate = parseFloat(document.getElementById('annualInterestRate').value) / 100;
@@ -140,26 +183,34 @@
 
             if (isNaN(principal) || isNaN(annualInterestRate) || isNaN(loanTerm)) {
                 document.getElementById('result').innerText = "Please enter valid numbers.";
+                hideLoadingSpinner(); // Hide spinner if input is invalid
                 return;
             }
 
             let periodsPerYear, totalPeriods, interestRatePerPeriod;
+            let xAxisLabel;
             if (repaymentFrequency === 'monthly') {
                 periodsPerYear = 12;
                 totalPeriods = loanTerm * 12;
                 interestRatePerPeriod = annualInterestRate / 12;
+                xAxisLabel = 'Month';
             } else if (repaymentFrequency === 'fortnightly') {
                 periodsPerYear = 26;
                 totalPeriods = loanTerm * 26;
                 interestRatePerPeriod = annualInterestRate / 26;
+                xAxisLabel = 'Fortnight';
             } else if (repaymentFrequency === 'weekly') {
                 periodsPerYear = 52;
                 totalPeriods = loanTerm * 52;
                 interestRatePerPeriod = annualInterestRate / 52;
+                xAxisLabel = 'Week';
             }
 
             const repayment = (principal * interestRatePerPeriod) / (1 - Math.pow(1 + interestRatePerPeriod, -totalPeriods));
-            document.getElementById('result').innerText = `Your ${repaymentFrequency} payment is $${repayment.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+            const totalRepayment = repayment * totalPeriods;
+            const totalInterest = totalRepayment - principal;
+            document.getElementById('result').innerText = `Your ${repaymentFrequency} payment is $${repayment.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.`;
+            document.getElementById('result').innerHTML += `<br>Total interest paid over the term is $${totalInterest.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.`;
 
             const labels = [];
             const data = [];
@@ -167,7 +218,7 @@
 
             for (let i = 0; i < totalPeriods; i++) {
                 remainingBalance = remainingBalance * (1 + interestRatePerPeriod) - repayment;
-                labels.push(`${repaymentFrequency.charAt(0).toUpperCase() + repaymentFrequency.slice(1)} ${i + 1}`);
+                labels.push(`${xAxisLabel} ${i + 1}`);
                 data.push(Math.max(0, remainingBalance)); // Ensure no negative balance
             }
 
@@ -193,7 +244,7 @@
                         x: {
                             title: {
                                 display: true,
-                                text: `${repaymentFrequency.charAt(0).toUpperCase() + repaymentFrequency.slice(1)}`
+                                text: `${xAxisLabel}`
                             }
                         },
                         y: {
@@ -205,9 +256,13 @@
                     }
                 }
             });
+
+            setTimeout(hideLoadingSpinner, 1000); // Hide spinner after 1 second
         }
 
         async function downloadPDF() {
+            showLoadingSpinner(); // Show spinner before downloading PDF
+
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
 
@@ -229,6 +284,8 @@
 
             // Save the PDF
             pdf.save('Mortgage_Repayment_Calculator.pdf');
+
+            hideLoadingSpinner(); // Hide spinner after PDF is downloaded
         }
 
         // Format loan amount input with commas and maintain cursor position
