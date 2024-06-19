@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Recommendation Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('background.jpeg'); /* Use the local background image */
+            background-size: cover; /* Make sure the background covers the whole page */
+            background-repeat: no-repeat; /* Prevent the background from repeating */
+            background-attachment: fixed; /* Ensure the background stays fixed in place */
+            background-color: #e9ecef; /* Light grey background fallback */
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff; /* White container background */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px; /* Slightly rounded corners for a modern look */
+            text-align: center; /* Center align contents */
+        }
+
+        h1 {
+            color: #343a40; /* Dark grey for the heading */
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left; /* Left align form labels and inputs */
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #495057; /* Slightly darker grey for labels */
+        }
+
+        input[type="number"], input[type="text"], select {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            box-sizing: border-box; /* Ensure padding and border are included in the width */
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff; /* Blue button background */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3; /* Darker blue for hover effect */
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #343a40; /* Dark grey for result text */
+            text-align: center; /* Center align the message */
+        }
+
+        .chart-container {
+            margin-top: 40px;
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.5em;
+            color: #343a40; /* Dark grey for the title */
+        }
+
+        .back-home {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .back-home:hover {
+            text-decoration: underline;
+        }
+
+        /* CSS for loading spinner */
+        .loading-spinner {
+            display: none; /* Initially hidden */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white background */
+            z-index: 1000; /* Ensure it's above other content */
+        }
+
+        .spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 8px solid #f3f3f3; /* Light grey border */
+            border-top: 8px solid #3498db; /* Blue border */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading spinner -->
+    <div class="loading-spinner" id="loadingSpinner">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container" id="content">
+        <h1>Mortgage Recommendation Tool</h1>
+        <form id="mortgageForm">
+            <div class="form-group">
+                <label for="propertyValue">Property Value:</label>
+                <input type="text" id="propertyValue" name="propertyValue" required>
+            </div>
+            <div class="form-group">
+                <label for="loanAmount">Loan Amount:</label>
+                <input type="text" id="loanAmount" name="loanAmount" required>
+            </div>
+            <div class="form-group">
+                <label for="deposit">Deposit:</label>
+                <input type="text" id="deposit" name="deposit" required>
+            </div>
+            <div class="form-group">
+                <label for="annualIncome">Annual Income:</label>
+                <input type="text" id="annualIncome" name="annualIncome" required>
+            </div>
+            <div class="form-group">
+                <label for="monthlyExpenses">Monthly Expenses:</label>
+                <input type="text" id="monthlyExpenses" name="monthlyExpenses" required>
+            </div>
+            <div class="form-group">
+                <label for="monthlyLiabilities">Monthly Liabilities:</label>
+                <input type="text" id="monthlyLiabilities" name="monthlyLiabilities" required>
+            </div>
+            <button type="button" onclick="calculateMortgage()">Calculate</button>
+        </form>
+
+        <div id="result"></div>
+        <div class="chart-container">
+            <canvas id="recommendationChart"></canvas>
+        </div>
+        <a href="/index.html" class="back-home">Home</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function showLoadingSpinner() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+        }
+
+        function hideLoadingSpinner() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        document.getElementById('mortgageForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            showLoadingSpinner(); // Show spinner on form submission
+            setTimeout(calculateMortgage, 500); // Delay calculation to show the spinner
+        });
+
+        let recommendationChart;
+
+        function calculateMortgage() {
+            const propertyValue = parseFloat(document.getElementById('propertyValue').value.replace(/,/g, ''));
+            const loanAmount = parseFloat(document.getElementById('loanAmount').value.replace(/,/g, ''));
+            const deposit = parseFloat(document.getElementById('deposit').value.replace(/,/g, ''));
+            const annualIncome = parseFloat(document.getElementById('annualIncome').value.replace(/,/g, ''));
+            const monthlyExpenses = parseFloat(document.getElementById('monthlyExpenses').value.replace(/,/g, ''));
+            const monthlyLiabilities = parseFloat(document.getElementById('monthlyLiabilities').value.replace(/,/g, ''));
+
+            const monthlyIncome = annualIncome / 12;
+            const monthlyRepaymentCapacity = monthlyIncome - monthlyExpenses - monthlyLiabilities;
+            const LVR = (loanAmount / propertyValue) * 100;
+
+            const annualInterestRate = 0.05; // 5% annual interest rate for calculation purposes
+            const loanTermYears = 30;
+            const periodsPerYear = 12;
+            const totalPeriods = loanTermYears * periodsPerYear;
+            const interestRatePerPeriod = annualInterestRate / periodsPerYear;
+            const maxAffordableRepayment = (monthlyRepaymentCapacity * (1 - Math.pow(1 + interestRatePerPeriod, -totalPeriods))) / interestRatePerPeriod;
+            const maxAffordableLoan = maxAffordableRepayment / (1 + interestRatePerPeriod) * (1 - Math.pow(1 + interestRatePerPeriod, -totalPeriods));
+
+            if (isNaN(propertyValue) || isNaN(loanAmount) || isNaN(deposit) || isNaN(annualIncome) || isNaN(monthlyExpenses) || isNaN(monthlyLiabilities)) {
+                document.getElementById('result').innerText = "Please enter valid numbers.";
+                hideLoadingSpinner(); // Hide spinner if input is invalid
+                return;
+            }
+
+            const lenders = [
+                { name: 'ANZ', maxLoan: maxAffordableLoan },
+                { name: 'ASB', maxLoan: maxAffordableLoan },
+                { name: 'BNZ', maxLoan: maxAffordableLoan },
+                { name: 'Kiwibank', maxLoan: maxAffordableLoan },
+                { name: 'Westpac', maxLoan: maxAffordableLoan }
+            ];
+
+            const labels = lenders.map(lender => lender.name);
+            const data = lenders.map(lender => lender.maxLoan);
+
+            if (recommendationChart) {
+                recommendationChart.destroy(); // Destroy the old chart before creating a new one
+            }
+
+            const ctx = document.getElementById('recommendationChart').getContext('2d');
+            recommendationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Max Loan Amount ($)',
+                            data: data,
+                            backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Proposed Loan Amount ($)',
+                            data: lenders.map(() => loanAmount),
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Lender'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Loan Amount ($)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (LVR > 80) {
+                document.getElementById('result').innerText = `The proposed loan amount of $${loanAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} is declined due to an LVR of ${LVR.toFixed(2)}%. The maximum loan amount you can afford is $${maxAffordableLoan.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.`;
+            } else {
+                document.getElementById('result').innerText = `Based on your financial position, the maximum loan amount you can afford is $${maxAffordableLoan.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.`;
+            }
+
+            setTimeout(hideLoadingSpinner, 1000); // Hide spinner after 1 second
+        }
+
+        function formatNumberWithCommas(numberString) {
+            const parts = numberString.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parts.join('.');
+        }
+
+        function handleNumberInput(event) {
+            const input = event.target;
+            const { selectionStart, selectionEnd } = input;
+            const oldValue = input.value.replace(/,/g, '');
+            input.value = formatNumberWithCommas(oldValue);
+            const newLength = input.value.length;
+            const oldLength = oldValue.length;
+            const cursorPosition = selectionStart + (newLength - oldLength);
+            input.setSelectionRange(cursorPosition, cursorPosition);
+        }
+
+        document.querySelectorAll('input[type="text"]').forEach(input => {
+            input.addEventListener('input', handleNumberInput);
+        });
+    </script>
+</body>
+</html>
+
+
+
+
