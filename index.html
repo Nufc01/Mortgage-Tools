@@ -7,15 +7,80 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #e9ecef; /* Light grey background */
+            background-image: url('background.jpeg'); /* Use the local background image */
+            background-size: cover; /* Make sure the background covers the whole page */
+            background-repeat: no-repeat; /* Prevent the background from repeating */
+            background-attachment: fixed; /* Ensure the background stays fixed in place */
+            background-color: #e9ecef; /* Light grey background fallback */
             color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Align items vertically */
+            background-color: rgba(255, 255, 255, 0.2); /* Slightly transparent background */
+            padding: 10px 0;
+            position: fixed; /* Fix the menu at the top */
+            width: 100%; /* Make the menu span the full width */
+            top: 0;
+            left: 0;
+            z-index: 1000; /* Ensure the menu stays on top */
+        }
+
+        .nav a, .nav .dropdown {
+            margin: 0 15px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+            position: relative; /* Ensure dropdown aligns correctly */
+        }
+
+        .nav a:hover, .nav .dropdown:hover > a {
+            background-color: rgba(37, 89, 116, 0.7); /* Slightly transparent blue for hover effect */
+        }
+
+        .nav .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%; /* Align dropdown below the menu */
+            left: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            border-radius: 4px;
+        }
+
+        .nav .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            transition: background-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .nav .dropdown-content a:hover {
+            background-color: rgba(37, 89, 116, 0.7); /* Slightly transparent blue for hover effect */
+            color: white;
+        }
+
+        .nav .dropdown:hover .dropdown-content {
+            display: block;
         }
 
         .container {
             max-width: 600px;
-            margin: 50px auto;
+            margin: 100px auto 50px auto; /* Adjust margin to avoid overlap with fixed menu */
             padding: 20px;
-            background-color: #ffffff; /* White container background */
+            background-color: rgba(255, 255, 255, 0.9); /* White container background with slight transparency */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px; /* Slightly rounded corners for a modern look */
             text-align: center; /* Center align the content */
@@ -29,7 +94,7 @@
             color: #495057; /* Slightly darker grey for text */
         }
 
-        a {
+        a.button {
             display: inline-block;
             padding: 10px 20px;
             background-color: #007bff; /* Blue button background */
@@ -39,16 +104,25 @@
             margin-top: 20px;
         }
 
-        a:hover {
+        a.button:hover {
             background-color: #0056b3; /* Darker blue for hover effect */
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to Our Financial Tools</h1>
-        <p>We offer a variety of tools to help you manage your finances. Click the button below to access our Mortgage Repayment Calculator.</p>
-        <a href="mortgage-calculator.html">Go to Mortgage Repayment Calculator</a>
+    <div class="nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <div class="dropdown">
+            <a href=>Calculators/Tools</a>
+            <div class="dropdown-content">
+                <a href="mortgage-calculator.html">Mortgage Repayment Calculator</a>
+                <a href="mortgage-recomendation-tool-test.html">Mortgage Reccomendation Tool</a>
+                <a href="loan-affordability-calc.html">Loan Affordability Calculator</a>
+                <!-- Add more services links here if needed -->
+            </div>
+        </div>
+        <a href="contact.html">Contact</a>
     </div>
 </body>
 </html>
